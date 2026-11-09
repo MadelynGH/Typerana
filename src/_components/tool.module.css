@@ -1,0 +1,10 @@
+.letter {
+    padding: 8px;
+    border-radius: 8px;
+    width: fit-content;
+    display: inline-block;
+}
+
+.currentLetter {
+    background-color: lightblue;
+}
