@@ -2,3 +2,19 @@ body {
     font-size: 1.2em;
     text-align: center;
 }
+
+button {
+    font-size: 1.2em;
+    background-color: #76376E;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0px 0px 10px 10px #76376E20;
+    transition-duration: 0.3s;
+}
+
+button:hover {
+    cursor: pointer;
+    box-shadow: none;
+}
