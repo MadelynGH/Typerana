@@ -8,3 +8,21 @@
 .currentLetter {
     background-color: lightblue;
 }
+
+.backButton {
+    color: #76376E;
+    background-color: white;
+    box-shadow: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    font-size: 1.5em;
+}
+
+.backButton:hover {
+    transform: scale(1.2);
+}
+
+.purpleText {
+    color: #76376E;
+}

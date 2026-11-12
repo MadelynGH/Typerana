@@ -12,6 +12,7 @@ button {
     padding: 8px;
     box-shadow: 0px 0px 10px 10px #76376E20;
     transition-duration: 0.3s;
+    font-weight: 450;
 }
 
 button:hover {

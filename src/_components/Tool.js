@@ -11,10 +11,11 @@ const montserrat = Montserrat({
     weight: ["400", "500", "600", "700", "800"]
 });
 
-function Play({ game, bestScores, updateBestScores }) {
-    const [paragraph, updateParagraph] = useState(new String("The quick brown fox jumps over the lazy dog.").split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i));
-    const [currentLetter, updateCurrentLetter] = useState(0);
+function Play({ game, updateStage, bestScores, updateBestScores}) {
     const [currentParagraph, updateCurrentParagraph] = useState(0);
+    let paragraphList = ["The quick brown fox jumps over the lazy dog.", "The five boxing wizards jump quickly."]
+    const [paragraph, updateParagraph] = useState(new String(paragraphList[currentParagraph]).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i));
+    const [currentLetter, updateCurrentLetter] = useState(0);
     const inputRef = useRef(null);
     const [startingTime, updateStartingTime] = useState(null);
     const [elapsedTime, updateElapsedTime] = useState(game == "timedParagraph" ? 0 : 15);
@@ -25,7 +26,7 @@ function Play({ game, bestScores, updateBestScores }) {
 
     function restart() {
         clearInterval(intervalRef.current);
-        updateElapsedTime(0);
+        updateElapsedTime(game == "timedParagraph" ? 0 : 15);
         updateCurrentLetter(0);
         updateCurrentParagraph(0);
         updateCharsTyped(0);
@@ -33,11 +34,15 @@ function Play({ game, bestScores, updateBestScores }) {
     }
 
     useEffect(() => {
+        updateParagraph(new String(paragraphList[currentParagraph % paragraphList.length]).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i));
+    }, [currentParagraph]);
+
+    useEffect(() => {
         inputRef.current.focus();
     }, [inputRef.current]);
 
     useEffect(() => {
-        updateCharsTyped(charsTyped + 1);
+        currentLetter != 0 ? updateCharsTyped(charsTyped + 1) : null;
         if (currentLetter >= paragraph.length) {
             if (game == "timedParagraph") {
                 clearInterval(intervalRef.current);
@@ -46,7 +51,7 @@ function Play({ game, bestScores, updateBestScores }) {
                 }
                 updateRestarted(false);
             } else if (game == "asMuchAsPossible") {
-                updateCurrentParagraph(1);
+                updateCurrentParagraph(currentParagraph + 1);
                 updateCurrentLetter(0);
             }
         }
@@ -77,6 +82,8 @@ function Play({ game, bestScores, updateBestScores }) {
 
     return (
         <>
+            <button onClick={() => updateStage(0)} className={styles.backButton}>←</button>
+
             <div className={inconsolata.className} style={{
                 display: "flex",
                 flexFlow: "row wrap",
@@ -87,16 +94,17 @@ function Play({ game, bestScores, updateBestScores }) {
             }}>
                 {paragraph.map((i, n) => n == currentLetter ? <h2 key={n} className={`${styles.letter} ${styles.currentLetter}`}>{i}</h2> : <h2 key={n} className={`${styles.letter}`}>{i}</h2>)}
             </div>
-            <h2>{elapsedTime} seconds</h2>
+            <h2><span className={styles.purpleText}>{elapsedTime}</span> seconds</h2>
+            {game == "asMuchAsPossible" ? <h2>Characters typed: <span className={styles.purpleText}>{charsTyped}</span></h2> : null}
             <button onClick={() => {
                 restart();
             }} className={montserrat.className}>Reset</button>
             {game == "timedParagraph" ? <h2 style={{
-                opacity: bestScores[0] == null ? "0" : "100"
-            }}>Your Best Time: <span style={{color:"#76376E"}}>{bestScores[0]}</span> seconds</h2> :
+                opacity: !bestScores[0] ? "0" : "100"
+            }}>Your Best Time: <span className={styles.purpleText}>{bestScores[0]}</span> seconds</h2> :
             <h2 style={{
-                opacity: bestScores[1] == null ? "0" : "100"
-            }}>Your Best Score (characters typed): <span style={{color:"#76376E"}}>{bestScores[1]}</span> characters</h2>}
+                opacity: !bestScores[1] ? "0" : "100"
+            }}>Your Best Score (characters typed): <span className={styles.purpleText}>{bestScores[1]}</span> characters</h2>}
 
             <input ref={inputRef} onKeyDown={async (e) => {
                 if (restarted) {
@@ -119,14 +127,38 @@ function Play({ game, bestScores, updateBestScores }) {
 export default function Tool() {
     const [stage, updateStage] = useState(0);
     const [selectedGame, updateSelectedGame] = useState(null);
-    const [bestScores, updateBestScores] = useState([null, null]);
+    const [bestScores, updateBestScores] = useState();
+    
+    useEffect(() => {
+        if (document.cookie.includes("bestScores")) {
+            let myCookie = document.cookie.split("bestScores=")[1].split(",");
+            console.log(myCookie);
+            updateBestScores([myCookie[0] ? JSON.parse(myCookie[0]) : null, myCookie[1] ? JSON.parse(myCookie[1]) : null]);
+        } else {
+            updateBestScores([null, null]);
+        }
+    }, [updateBestScores]);
+
+    useEffect(() => {
+        if (bestScores) {
+            document.cookie = `bestScores=${[bestScores[0], bestScores[1]]}`;
+        }
+    }, [bestScores]);
+    
     return (
         <>
             {stage == 0 ?
                 <>
                     <h2>Choose Your Experience:</h2>
-                    <button onClick={() => {updateSelectedGame("timedParagraph"); updateStage(1);}}>Timed Paragraph</button>
-                    <button onClick={() => {updateSelectedGame("asMuchAsPossible"); updateStage(1);}}>As Much As Possible</button>
+                    <div style={{
+                        display: "flex",
+                        flexFlow: "column wrap",
+                        alignItems: "center",
+                        gap: "20px"
+                    }}>
+                        <button onClick={() => {updateSelectedGame("timedParagraph"); updateStage(1);}} className={montserrat.className}>Timed Paragraph</button>
+                        <button onClick={() => {updateSelectedGame("asMuchAsPossible"); updateStage(1);}} className={montserrat.className}>As Much As Possible</button>
+                    </div>
                 </>
             : <Play game={selectedGame} updateStage={updateStage} bestScores={bestScores} updateBestScores={updateBestScores} />
             }
