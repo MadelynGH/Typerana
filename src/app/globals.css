@@ -19,3 +19,8 @@ button:hover {
     cursor: pointer;
     box-shadow: none;
 }
+
+h1 {
+    margin: 40px;
+    color: #76376E;
+}
