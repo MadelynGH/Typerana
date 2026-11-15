@@ -25,7 +25,7 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
         combinedParagraphList = combinedParagraphList.concat(n > 0 ? " " : "", i);
     });
     let wordBank = ["the", "wait", "fox", "dog", "hello", "chair", "table", "bracket", "cat", "what", "laptop", "computer", "paragraph", "decent", "recent", "blah"];
-    const [paragraph, updateParagraph] = useState((game == "asMuchAsPossible" || game == "survival" ? new String(paragraphList[0]) : (game == "timedParagraph" ? new String(combinedParagraphList) : (game == "customPractice" ? new String(customText) : (game == "wordRush" ? new String(wordBank[Math.floor(Math.random()*wordBank.length)]) : (game == "memory" ? constructSentence() : constructSentence().toLowerCase())))).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i)));
+    const [paragraph, updateParagraph] = useState((game == "asMuchAsPossible" || game == "survival" ? new String(paragraphList[0]) : (game == "timedParagraph" ? new String(combinedParagraphList) : (game == "customPractice" ? new String(customText) : (game == "wordRush" ? new String(wordBank[Math.floor(Math.random()*wordBank.length)]) : (game == "memory" ? constructSentence() : constructSentence().toLowerCase()))))).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i));
     const [currentLetter, updateCurrentLetter] = useState(game == "memory" ? -1 : 0);
     const inputRef = useRef(null);
     const [startingTime, updateStartingTime] = useState(null);
@@ -53,10 +53,11 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
         let soonToBeParagraph;
         if (game == "wordRush") {
             soonToBeParagraph = new String(wordBank[Math.floor(Math.random()*wordBank.length)]).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i);
+            updateParagraph(soonToBeParagraph);
         } else if (game == "memory" || game == "caseChallenge") {
             soonToBeParagraph = (game == "memory" ? constructSentence() : constructSentence().toLowerCase()).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i);
+            updateParagraph(soonToBeParagraph);
         }
-        updateParagraph(soonToBeParagraph);
         clearInterval(intervalRef.current);
         updateElapsedTime(game == "timedParagraph" ? 0 : (game == "asMuchAsPossible" ? 15 : 2));
         updateCurrentLetter(game == "memory" ? -1 : 0);
@@ -67,7 +68,8 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
         updateLives(5);
         updateMemoryStage(0);
         myI = 0;
-        updateCasedParagraph(soonToBeParagraph.map((i) => {
+        if (game == "caseChallenge") {
+            updateCasedParagraph(soonToBeParagraph.map((i) => {
             if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".includes(i)) {
                 myI ++;
                 return (myI-1) % 2 == 0 ? i.toUpperCase() : i.toLowerCase();
@@ -75,6 +77,7 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
                 return i;
             }
         }));
+        }
     }
 
     useEffect(() => {
@@ -125,21 +128,21 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
 
     if (game == "asMuchAsPossible") {
         useEffect(() => {
+            if ((charsTyped > bestScores[1]) || !(bestScores[1])) {
+                updateBestScores([bestScores[0], charsTyped, bestScores[2], bestScores[3]]);
+            }
             if (elapsedTime < 0.01) {
                 clearInterval(intervalRef.current);
                 updateElapsedTime(0);
-                if ((charsTyped > bestScores[1]) || !(bestScores[1])) {
-                    updateBestScores([bestScores[0], charsTyped, bestScores[2], bestScores[3]]);
-                }
                 updateRestarted(false);
             }
         }, [elapsedTime]);
     } else if (game == "wordRush") {
         useEffect(() => {
+            if (currentParagraph > bestScores[2] || !(bestScores[2])) {
+                updateBestScores([bestScores[0], bestScores[1], currentParagraph, bestScores[3]]);
+            }
             if (elapsedTime < 0.01) {
-                if (currentParagraph > bestScores[2] || !(bestScores[2])) {
-                    updateBestScores([bestScores[0], bestScores[1], currentParagraph, bestScores[3]]);
-                }
                 clearInterval(intervalRef.current);
                 updateElapsedTime(0);
                 updateRestarted(false);
@@ -151,11 +154,14 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
         useEffect(() => {
             if (lives == 0) {
                 updateRestarted(false);
-                if (charsTyped > bestScores[3] || !(bestScores[3])) {
-                    updateBestScores([bestScores[0], bestScores[1], bestScores[2], charsTyped]);
-                }
             }
         }, [lives]);
+
+        useEffect(() => {
+            if (charsTyped > bestScores[3] || !(bestScores[3])) {
+                updateBestScores([bestScores[0], bestScores[1], bestScores[2], charsTyped]);
+            }
+        }, [charsTyped]);
     }
 
     return (
@@ -212,12 +218,15 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
             <input ref={inputRef} onKeyDown={(e) => {
                 if (restarted) {
                     if ((paragraph[currentLetter].type == "span")) {
-                        if ((e.key == " ")) {
-                            if (paragraph[currentLetter].props.className == "space") {
+                        if (paragraph[currentLetter].props.className == "space") {
+                            if ((e.key == " ")) {
                                 updateCurrentLetter(currentLetter + 1);
+                            } else if (!keyCurrentlyDown && !(["Unidentified", "Shift", "Alt", "AltGraph", "CapsLock", "Control", "Fn", "FnLock", "Hyper", "Meta", "NumLock", "ScrollLock", "Super", "Symbol", "SymbolLock", "Backspace"].includes(e.key))) {
+                                updateLives(lives - 1);
+                                updateKeyCurrentlyDown(true);
                             }
                         }
-                    } else if ((game != "caseChallenge" && e.key == paragraph[currentLetter]) || (e.key == casedParagraph[currentLetter])) {
+                    } else if (!(paragraph[currentLetter].type == "span") && ((game != "caseChallenge" && e.key == paragraph[currentLetter]) || (e.key == casedParagraph[currentLetter]))) {
                         e.key != " " ? updateNextRequiredCase((nextRequiredCase + 1) % 2) : null;
                         if ((currentLetter == 0) && ((game == "timedParagraph") || (currentParagraph == 0))) {
                             updateStartingTime(performance.now());
@@ -245,15 +254,15 @@ export default function Tool() {
         if (document.cookie.includes("bestScores")) {
             let myCookie = document.cookie.split("bestScores=")[1].split(",");
             console.log(myCookie);
-            updateBestScores([myCookie[0] ? JSON.parse(myCookie[0]) : null, myCookie[1] ? JSON.parse(myCookie[1]) : null, myCookie[2] ? JSON.parse(myCookie[2]) : null]);
+            updateBestScores([myCookie[0] ? JSON.parse(myCookie[0]) : null, myCookie[1] ? JSON.parse(myCookie[1]) : null, myCookie[2] ? JSON.parse(myCookie[2]) : null, myCookie[3] ? JSON.parse(myCookie[3]) : null]);
         } else {
-            updateBestScores([null, null, null]);
+            updateBestScores([null, null, null, null]);
         }
     }, [updateBestScores]);
 
     useEffect(() => {
         if (bestScores) {
-            document.cookie = `bestScores=${[bestScores[0], bestScores[1], bestScores[2]]}`;
+            document.cookie = `bestScores=${[bestScores[0], bestScores[1], bestScores[2], bestScores[3]]}`;
         }
     }, [bestScores]);
     
