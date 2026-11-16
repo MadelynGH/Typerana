@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function Page() {
     return (
         <>
-            <Link className={styles.backButton} href="/">←</Link>
+            <Link className={styles.backButton} href="/Typerana">←</Link>
 
             <h2 style={{
                 marginTop: "80px"
