@@ -1,5 +1,5 @@
 body {
-    font-size: 1.2em;
+    font-size: 1.25em;
     text-align: center;
 }
 
@@ -21,6 +21,20 @@ button:hover {
 }
 
 h1 {
-    margin: 40px;
-    color: #76376E;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    background: linear-gradient(to right, #76376E, #2b692c);
+    color: transparent;
+    background-clip: text;
+}
+
+a {
+    transition-duration: 0.3s;
+}
+
+a:hover {
+    padding-bottom: 2px;
 }

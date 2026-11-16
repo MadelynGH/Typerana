@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import styles from "./tool.module.css";
 import { Inconsolata, Montserrat } from "next/font/google";
+import Link from "next/link";
 
 const inconsolata = Inconsolata({
     weight: ["400"]
@@ -18,6 +19,21 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
         let movementVerbs = ["walks", "runs", "skips", "jumps", "hops"];
         return `The ${adjectives[Math.floor(Math.random()*adjectives.length)]} ${nouns[Math.floor(Math.random()*nouns.length)]} ${movementVerbs[Math.floor(Math.random()*movementVerbs.length)]} to the ${adjectives[Math.floor(Math.random()*adjectives.length)]} ${nouns[Math.floor(Math.random()*nouns.length)]} and says, "You are ${adjectives[Math.floor(Math.random()*adjectives.length)]}."`;
     }
+    function scrambleWord(wordArray) {
+        let wordArrayCopy = wordArray.slice();
+        let scrambled = "";
+        for (let i of wordArray) {
+            let chosenLetterIndex = Math.floor(Math.random()*wordArrayCopy.length);
+            scrambled = scrambled.concat(wordArrayCopy[chosenLetterIndex]);
+            wordArrayCopy.splice(chosenLetterIndex, 1);
+        };
+
+        if (JSON.stringify(scrambled.split("")) != JSON.stringify(wordArray)) {
+            return scrambled;
+        } else {
+            scrambleWord(wordArray);
+        }
+    }
     const [currentParagraph, updateCurrentParagraph] = useState(0);
     let paragraphList = ["The quick brown fox jumps over the lazy dog.", "The five boxing wizards jump quickly."];
     let combinedParagraphList = "";
@@ -25,7 +41,8 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
         combinedParagraphList = combinedParagraphList.concat(n > 0 ? " " : "", i);
     });
     let wordBank = ["the", "wait", "fox", "dog", "hello", "chair", "table", "bracket", "cat", "what", "laptop", "computer", "paragraph", "decent", "recent", "blah"];
-    const [paragraph, updateParagraph] = useState((game == "asMuchAsPossible" || game == "survival" ? new String(paragraphList[0]) : (game == "timedParagraph" ? new String(combinedParagraphList) : (game == "customPractice" ? new String(customText) : (game == "wordRush" ? new String(wordBank[Math.floor(Math.random()*wordBank.length)]) : (game == "memory" ? constructSentence() : constructSentence().toLowerCase()))))).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i));
+    const [paragraph, updateParagraph] = useState((game == "asMuchAsPossible" || game == "survival" ? new String(paragraphList[0]) : (game == "timedParagraph" ? new String(combinedParagraphList) : (game == "customPractice" ? new String(customText) : (game == "wordRush" ? new String(wordBank[Math.floor(Math.random()*wordBank.length)]) : (game == "memory" ? constructSentence() : (game == "caseChallenge" ? constructSentence().toLowerCase() : wordBank[Math.floor(Math.random()*wordBank.length)])))))).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i));
+    const [scrambledParagraph, updateScrambledParagraph] = useState(scrambleWord(paragraph));
     const [currentLetter, updateCurrentLetter] = useState(game == "memory" ? -1 : 0);
     const inputRef = useRef(null);
     const [startingTime, updateStartingTime] = useState(null);
@@ -57,6 +74,10 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
         } else if (game == "memory" || game == "caseChallenge") {
             soonToBeParagraph = (game == "memory" ? constructSentence() : constructSentence().toLowerCase()).split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i);
             updateParagraph(soonToBeParagraph);
+        } else if (game == "unscramble") {
+            soonToBeParagraph = wordBank[Math.floor(Math.random()*wordBank.length)].split("").map(i => i == " " ? <span className="space">&nbsp;</span> : i);
+            updateParagraph(soonToBeParagraph);
+            updateScrambledParagraph(scrambleWord(soonToBeParagraph));
         }
         clearInterval(intervalRef.current);
         updateElapsedTime(game == "timedParagraph" ? 0 : (game == "asMuchAsPossible" ? 15 : 2));
@@ -168,7 +189,9 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
         <>
             <button onClick={() => updateStage(0)} className={styles.backButton}>←</button>
 
-            <h2>{game == "timedParagraph" ? "Timed Paragraph" : (game == "asMuchAsPossible" ? "As Much As Possible" : (game == "wordRush" ? "Word Rush" : (game == "survival" ? "Survival" : (game == "customPractice" ? "Custom Practice" : (game == "memory" ? "Memory Mode" : "Case Challenge")))))}</h2>
+            <h2>{game == "timedParagraph" ? "Timed Paragraph" : (game == "asMuchAsPossible" ? "As Much As Possible" : (game == "wordRush" ? "Word Rush" : (game == "survival" ? "Survival" : (game == "customPractice" ? "Custom Practice" : (game == "memory" ? "Memory Mode" : (game == "caseChallenge" ? "Case Challenge" : "Unscramble"))))))}</h2>
+
+            {game == "unscramble" ? <h3>{scrambledParagraph}</h3> : null}
 
             <div className={inconsolata.className} style={{
                 display: "flex",
@@ -181,17 +204,17 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
                 opacity: game == "wordRush" ? Math.round(elapsedTime*50) + "%" : "100%"
             }}>
                 {paragraph.map((i, n) => n == currentLetter ? <h2 key={n} className={`${styles.letter} ${styles.currentLetter}`} style={{
-                    color: memoryStage == 1 ? "transparent" : "inherit",
+                    color: (memoryStage == 1 || game == "unscramble") ? "transparent" : "inherit",
                     opacity: game != "caseChallenge" ? "100%" : "50%"
                 }}>{i}</h2> : <h2 key={n} className={`${styles.letter}`} style={{
-                    color: (memoryStage == 1 && currentLetter <= n) ? "transparent" : "inherit",
+                    color: ((memoryStage == 1 || game == "unscramble") && currentLetter <= n) ? "transparent" : "inherit",
                     opacity: game != "caseChallenge" ? "100%" : (currentLetter > n) ? "100%" : "50%"
                 }}>{game == "caseChallenge" && currentLetter > n ? casedParagraph[n] : i}</h2>)}
             </div>
             {game == "wordRush" || game == "survival" ? <h2 style={{
                 opacity: (game == "wordRush" && elapsedTime == 0) || (game == "survival" && lives == 0) ? "100%" : "0%"
             }}>GAME OVER</h2> : null}
-            {(game == "customPractice" || game == "wordRush" || game == "survival" || game == "memory" || game == "caseChallenge") ? null : <h2><span className={styles.purpleText}>{elapsedTime}</span> seconds</h2>}
+            {(game == "customPractice" || game == "wordRush" || game == "survival" || game == "memory" || game == "caseChallenge" || game == "unscramble") ? null : <h2><span className={styles.purpleText}>{elapsedTime}</span> seconds</h2>}
             {game == "asMuchAsPossible" || game == "survival" ? <h2>Characters typed: <span className={styles.purpleText}>{charsTyped}</span></h2> : null}
             {game == "wordRush" ? <h2>Word streak: <span className={styles.purpleText}>{currentParagraph}</span></h2> : null}
             {game == "survival" ? <h2>Lives remaining: <span className={styles.purpleText}>{lives}</span></h2> : null}
@@ -216,7 +239,7 @@ function Play({ game, updateStage, bestScores, updateBestScores, customText }) {
             : null))}
 
             <input ref={inputRef} onKeyDown={(e) => {
-                if (restarted) {
+                if (restarted && paragraph[currentLetter]) {
                     if ((paragraph[currentLetter].type == "span")) {
                         if (paragraph[currentLetter].props.className == "space") {
                             if ((e.key == " ")) {
@@ -253,7 +276,6 @@ export default function Tool() {
     useEffect(() => {
         if (document.cookie.includes("bestScores")) {
             let myCookie = document.cookie.split("bestScores=")[1].split(",");
-            console.log(myCookie);
             updateBestScores([myCookie[0] ? JSON.parse(myCookie[0]) : null, myCookie[1] ? JSON.parse(myCookie[1]) : null, myCookie[2] ? JSON.parse(myCookie[2]) : null, myCookie[3] ? JSON.parse(myCookie[3]) : null]);
         } else {
             updateBestScores([null, null, null, null]);
@@ -283,6 +305,7 @@ export default function Tool() {
                         <button onClick={() => {updateSelectedGame("survival"); updateStage(1);}} className={montserrat.className}>Survival</button>
                         <button onClick={() => {updateSelectedGame("memory"); updateStage(1);}} className={montserrat.className}>Memory Mode</button>
                         <button onClick={() => {updateSelectedGame("caseChallenge"); updateStage(1);}} className={montserrat.className}>Case Challenge</button>
+                        <button onClick={() => {updateSelectedGame("unscramble"); updateStage(1);}} className={montserrat.className}>Unscramble</button>
                         <button onClick={() => {
                             updateSelectedGame("customPractice");
                             let promptResult = prompt("Type the text you'd like to practice with."); 
@@ -291,25 +314,15 @@ export default function Tool() {
                                 updateStage(1);
                             }}} className={montserrat.className}>Custom Practice</button>
                     </div>
-
-                    <h2 style={{
-                        marginTop: "80px"
-                    }}>What Are These?</h2>
-                    <ul style={{
-                        width: "60%",
-                        marginLeft: "auto",
-                        marginRight: "auto",
-                        textAlign: "left",
-                        lineHeight: "1.7"
-                    }}>
-                        <li><b>Timed Paragraph: </b>Type a paragraph as fast as you can.</li>
-                        <li><b>As Much As Possible: </b>Type as much as you can in 15 seconds.</li>
-                        <li><b>Word Rush: </b>You have two seconds per word (the word gradually fades away); words are displayed one at a time for you to build your word streak. If you take too long for a word, you lose you streak and the game is over.</li>
-                        <li><b>Survival: </b>You have five lives. Each mistake costs you a life. Try to survive as many characters as possible!</li>
-                        <li><b>Memory Mode: </b>You get to see a passage. When you're ready, try to reconstruct it from memory. (This is not timed, nor does it detect your accuracy; it's more of an exercise.)</li>
-                        <li><b>Case Challenge: </b>Type a sentence, alternating the letters between uppercase and lowercase. The sentences are of similar style to those used in Memory Mode. (starting with uppercase). (This is not timed, nor does it detect your accuracy; it's more of an exercise.)</li>
-                        <li><b>Custom Practice: </b>Choose your own practice text to type untimed!</li>
-                    </ul>
+                    <Link href="./whatAreThese" style={{
+                        display: "inline-block",
+                        marginTop: "50px",
+                        fontSize: "1.2em",
+                        color: "black",
+                        textDecoration: "none",
+                        borderBottom: "1.5px solid black",
+                        fontWeight: "450"
+                    }}>What Are These?</Link>
                 </>
             : <Play game={selectedGame} updateStage={updateStage} bestScores={bestScores} updateBestScores={updateBestScores} customText={customText} />
             }

@@ -13,6 +13,9 @@ export default function RootLayout({ children }) {
   return (
     <html>
       <body className={montserrat.className}>
+        <h1 style={{
+          fontSize: "2.4em"
+        }}>Typerana</h1>
         {children}
       </body>
     </html>

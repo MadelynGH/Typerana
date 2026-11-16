@@ -17,6 +17,10 @@
     top: 15px;
     left: 15px;
     font-size: 1.5em;
+    text-decoration: none;
+    border-radius: 8px;
+    padding: 8px;
+    font-weight: 450;
 }
 
 .backButton:hover {
